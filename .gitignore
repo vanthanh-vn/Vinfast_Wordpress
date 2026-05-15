@@ -1,17 +1,3 @@
-# Local WordPress secrets
-wp-config.php
-.env
-
-# Temporary/local helper files
-codex-vf-store-inspect.php
-
-# Runtime and generated files
-*.log
-wp-content/debug.log
-wp-content/cache/
-wp-content/upgrade/
-wp-content/uploads/cache/
-
 # OS/editor noise
 .DS_Store
 Thumbs.db
