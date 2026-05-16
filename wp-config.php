@@ -93,11 +93,16 @@ define( 'WP_DEBUG', false );
  * Cloudflare Tunnel support for the public VinFast domain.
  *
  * Local access stays unchanged at http://localhost/vinfast/.
- * Public access should use https://vinfasttpc.io.vn/vinfast/.
+ * Public access uses the current Cloudflare request scheme so HTTP still
+ * works while Universal SSL is pending.
  */
+$vf_is_https =
+	( isset( $_SERVER['HTTPS'] ) && 'off' !== strtolower( (string) $_SERVER['HTTPS'] ) )
+	|| ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === strtolower( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) )
+	|| ( isset( $_SERVER['HTTP_CF_VISITOR'] ) && false !== strpos( $_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"' ) );
+
 if (
-	( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === strtolower( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) )
-	|| ( isset( $_SERVER['HTTP_CF_VISITOR'] ) && false !== strpos( $_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"' ) )
+	$vf_is_https
 ) {
 	$_SERVER['HTTPS'] = 'on';
 }
@@ -105,8 +110,9 @@ if (
 if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 	$vf_public_host = strtolower( $_SERVER['HTTP_HOST'] );
 	if ( in_array( $vf_public_host, array( 'vinfasttpc.io.vn', 'www.vinfasttpc.io.vn' ), true ) ) {
-		define( 'WP_HOME', 'https://' . $vf_public_host . '/vinfast' );
-		define( 'WP_SITEURL', 'https://' . $vf_public_host . '/vinfast' );
+		$vf_public_scheme = $vf_is_https ? 'https' : 'http';
+		define( 'WP_HOME', $vf_public_scheme . '://' . $vf_public_host . '/vinfast' );
+		define( 'WP_SITEURL', $vf_public_scheme . '://' . $vf_public_host . '/vinfast' );
 	}
 }
 
