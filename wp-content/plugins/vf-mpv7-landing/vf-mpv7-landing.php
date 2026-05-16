@@ -2,7 +2,7 @@
 /**
  * Plugin Name: VF MPV 7 Landing for Elementor
  * Description: Landing page and reservation flow for a VinFast-style VF MPV 7 page. Use shortcode [vinfast_mpv7_landing] inside Elementor.
- * Version: 1.0.25
+ * Version: 1.0.26
  * Author: Local Developer
  * Text Domain: vf-mpv7-landing
  */
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class VF_MPV7_Landing {
-	const VERSION = '1.0.25';
+	const VERSION = '1.0.26';
 	const CPT     = 'vf_reservation';
 
 	public function __construct() {
@@ -32,8 +32,12 @@ final class VF_MPV7_Landing {
 		add_action( 'wp_ajax_nopriv_vf_cart_update_ajax', array( $this, 'handle_cart_update_ajax' ) );
 		add_action( 'admin_post_vf_cart_remove', array( $this, 'handle_cart_remove' ) );
 		add_action( 'admin_post_nopriv_vf_cart_remove', array( $this, 'handle_cart_remove' ) );
+		add_action( 'wp_ajax_vf_cart_remove_ajax', array( $this, 'handle_cart_remove_ajax' ) );
+		add_action( 'wp_ajax_nopriv_vf_cart_remove_ajax', array( $this, 'handle_cart_remove_ajax' ) );
 		add_action( 'admin_post_vf_cart_clear', array( $this, 'handle_cart_clear' ) );
 		add_action( 'admin_post_nopriv_vf_cart_clear', array( $this, 'handle_cart_clear' ) );
+		add_action( 'wp_ajax_vf_cart_clear_ajax', array( $this, 'handle_cart_clear_ajax' ) );
+		add_action( 'wp_ajax_nopriv_vf_cart_clear_ajax', array( $this, 'handle_cart_clear_ajax' ) );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_filter( 'manage_' . self::CPT . '_posts_columns', array( $this, 'reservation_columns' ) );
 		add_action( 'manage_' . self::CPT . '_posts_custom_column', array( $this, 'reservation_column_content' ), 10, 2 );
@@ -625,7 +629,7 @@ final class VF_MPV7_Landing {
 								</form>
 								<div class="vf-cart-subtotal">
 									<strong data-vf-cart-item-subtotal><?php echo wp_kses_post( WC()->cart->get_product_subtotal( $product, $quantity ) ); ?></strong>
-									<form method="post" action="<?php echo $admin_post_url; ?>">
+									<form method="post" action="<?php echo $admin_post_url; ?>" data-vf-cart-remove-form>
 										<input type="hidden" name="action" value="vf_cart_remove">
 										<input type="hidden" name="cart_item_key" value="<?php echo esc_attr( $cart_item_key ); ?>">
 										<?php wp_nonce_field( 'vf_cart_remove', 'vf_cart_nonce' ); ?>
@@ -651,7 +655,7 @@ final class VF_MPV7_Landing {
 							<div class="vf-cart-total"><dt>Tổng cộng</dt><dd data-vf-cart-total><?php echo wp_kses_post( WC()->cart->get_total() ); ?></dd></div>
 						</dl>
 						<a class="vf-cta" href="<?php echo esc_url( $checkout_url ); ?>">Thanh Toán Ngay →</a>
-						<form class="vf-cart-clear-form" method="post" action="<?php echo $admin_post_url; ?>">
+						<form class="vf-cart-clear-form" method="post" action="<?php echo $admin_post_url; ?>" data-vf-cart-clear-form>
 							<input type="hidden" name="action" value="vf_cart_clear">
 							<?php wp_nonce_field( 'vf_cart_clear', 'vf_cart_nonce' ); ?>
 							<button type="submit">Xóa sạch giỏ hàng</button>
@@ -731,6 +735,15 @@ final class VF_MPV7_Landing {
 		);
 	}
 
+	private function get_cart_ajax_totals() {
+		return array(
+			'cartCount'    => WC()->cart->get_cart_contents_count(),
+			'cartSubtotal' => WC()->cart->get_cart_subtotal(),
+			'discount'     => '− ' . wc_price( (float) WC()->cart->get_discount_total() ),
+			'total'        => WC()->cart->get_total(),
+		);
+	}
+
 	public function handle_cart_remove() {
 		if (
 			empty( $_POST['vf_cart_nonce'] )
@@ -751,6 +764,33 @@ final class VF_MPV7_Landing {
 		exit;
 	}
 
+	public function handle_cart_remove_ajax() {
+		if (
+			empty( $_POST['vf_cart_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['vf_cart_nonce'] ) ), 'vf_cart_remove' )
+			|| ! function_exists( 'WC' )
+			|| ! WC()->cart
+		) {
+			wp_send_json_error( array( 'message' => 'Không thể xoá sản phẩm.' ), 403 );
+		}
+
+		$key = isset( $_POST['cart_item_key'] ) ? sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) ) : '';
+
+		if ( ! $key || empty( WC()->cart->cart_contents[ $key ] ) ) {
+			wp_send_json_error( array( 'message' => 'Sản phẩm không còn trong giỏ hàng.' ), 404 );
+		}
+
+		WC()->cart->remove_cart_item( $key );
+		WC()->cart->calculate_totals();
+
+		wp_send_json_success(
+			array_merge(
+				array( 'removedKey' => $key ),
+				$this->get_cart_ajax_totals()
+			)
+		);
+	}
+
 	public function handle_cart_clear() {
 		if (
 			empty( $_POST['vf_cart_nonce'] )
@@ -766,6 +806,22 @@ final class VF_MPV7_Landing {
 
 		wp_safe_redirect( home_url( '/gio-hang/' ) );
 		exit;
+	}
+
+	public function handle_cart_clear_ajax() {
+		if (
+			empty( $_POST['vf_cart_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['vf_cart_nonce'] ) ), 'vf_cart_clear' )
+			|| ! function_exists( 'WC' )
+			|| ! WC()->cart
+		) {
+			wp_send_json_error( array( 'message' => 'Không thể xoá sạch giỏ hàng.' ), 403 );
+		}
+
+		WC()->cart->empty_cart();
+		WC()->cart->calculate_totals();
+
+		wp_send_json_success( $this->get_cart_ajax_totals() );
 	}
 
 	public function ensure_news_page() {

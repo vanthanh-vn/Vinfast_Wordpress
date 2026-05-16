@@ -1805,7 +1805,14 @@ body textarea,
 	opacity: 0.65;
 }
 
-.vf-cart-modern .vf-cart-qty button:disabled {
+.vf-cart-modern [data-vf-cart-remove-form].is-updating,
+.vf-cart-modern [data-vf-cart-clear-form].is-updating {
+	opacity: 0.65;
+}
+
+.vf-cart-modern .vf-cart-qty button:disabled,
+.vf-cart-modern [data-vf-cart-remove-form] button:disabled,
+.vf-cart-modern [data-vf-cart-clear-form] button:disabled {
 	cursor: wait;
 }
 

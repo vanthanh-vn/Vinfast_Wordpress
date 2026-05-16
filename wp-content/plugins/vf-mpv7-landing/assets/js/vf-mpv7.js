@@ -74,6 +74,59 @@
 		}
 	}
 
+	function refreshCartFragments() {
+		if (window.jQuery && document.body) {
+			window.jQuery(document.body).trigger('wc_fragment_refresh');
+		}
+	}
+
+	function updateCartTotals(page, data) {
+		setHtml('[data-vf-cart-subtotal]', data.cartSubtotal, page);
+		setHtml('[data-vf-cart-discount]', data.discount, page);
+		setHtml('[data-vf-cart-total]', data.total, page);
+		updateCartCountText(page, data.cartCount);
+		refreshCartFragments();
+	}
+
+	function renderEmptyCart(page) {
+		var layout = page.querySelector('.vf-cart-layout');
+		var continueLink = page.querySelector('.vf-cart-continue');
+		var shopUrl = continueLink ? continueLink.getAttribute('href') : '/';
+		var emptyHtml = [
+			'<section class="vf-cart-empty">',
+			'<div class="vf-cart-empty-icon">VF</div>',
+			'<h2>Giỏ hàng đang trống</h2>',
+			'<p>Bạn chưa thêm sản phẩm nào vào giỏ hàng. Hãy chọn một mẫu xe để xem tổng tiền và tiếp tục thanh toán.</p>',
+			'<a class="vf-cta" href="' + shopUrl + '">Vào cửa hàng</a>',
+			'</section>'
+		].join('');
+
+		if (layout) {
+			layout.insertAdjacentHTML('afterend', emptyHtml);
+			layout.remove();
+		}
+	}
+
+	function setFormUpdating(form, isUpdating) {
+		form.classList.toggle('is-updating', isUpdating);
+		form.querySelectorAll('button').forEach(function (button) {
+			button.disabled = isUpdating;
+		});
+	}
+
+	function submitCartAjax(form, action) {
+		var formData = new FormData(form);
+		formData.set('action', action);
+
+		return fetch(window.vfMpv7Cart.ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json();
+		});
+	}
+
 	function initCartQuantityUpdates() {
 		if (typeof window.vfMpv7Cart === 'undefined' || !window.vfMpv7Cart.ajaxUrl) {
 			return;
@@ -97,10 +150,7 @@
 				formData.set('action', 'vf_cart_update_ajax');
 				formData.set('quantity', quantity);
 
-				form.classList.add('is-updating');
-				form.querySelectorAll('button').forEach(function (button) {
-					button.disabled = true;
-				});
+				setFormUpdating(form, true);
 
 				fetch(window.vfMpv7Cart.ajaxUrl, {
 					method: 'POST',
@@ -132,23 +182,86 @@
 						}
 
 						setHtml('[data-vf-cart-item-subtotal]', data.itemSubtotal, item);
-						setHtml('[data-vf-cart-subtotal]', data.cartSubtotal, page);
-						setHtml('[data-vf-cart-discount]', data.discount, page);
-						setHtml('[data-vf-cart-total]', data.total, page);
-						updateCartCountText(page, data.cartCount);
+						updateCartTotals(page, data);
+					})
+					.catch(function () {
+						form.submit();
+					})
+					.finally(function () {
+						setFormUpdating(form, false);
+					});
+			});
+		});
+	}
 
-						if (window.jQuery && document.body) {
-							window.jQuery(document.body).trigger('wc_fragment_refresh');
+	function initCartRemoveActions() {
+		if (typeof window.vfMpv7Cart === 'undefined' || !window.vfMpv7Cart.ajaxUrl) {
+			return;
+		}
+
+		document.querySelectorAll('[data-vf-cart-remove-form]').forEach(function (form) {
+			form.addEventListener('submit', function (event) {
+				event.preventDefault();
+
+				var item = form.closest('[data-vf-cart-item]');
+				var page = form.closest('.vf-cart-modern');
+
+				if (!item || !page) {
+					form.submit();
+					return;
+				}
+
+				setFormUpdating(form, true);
+
+				submitCartAjax(form, 'vf_cart_remove_ajax')
+					.then(function (payload) {
+						if (!payload || !payload.success || !payload.data) {
+							throw new Error('Cart remove failed');
+						}
+
+						var data = payload.data;
+						item.remove();
+						updateCartTotals(page, data);
+
+						if (parseInt(data.cartCount || '0', 10) <= 0) {
+							renderEmptyCart(page);
 						}
 					})
 					.catch(function () {
 						form.submit();
 					})
 					.finally(function () {
-						form.classList.remove('is-updating');
-						form.querySelectorAll('button').forEach(function (button) {
-							button.disabled = false;
-						});
+						setFormUpdating(form, false);
+					});
+			});
+		});
+
+		document.querySelectorAll('[data-vf-cart-clear-form]').forEach(function (form) {
+			form.addEventListener('submit', function (event) {
+				event.preventDefault();
+
+				var page = form.closest('.vf-cart-modern');
+				if (!page) {
+					form.submit();
+					return;
+				}
+
+				setFormUpdating(form, true);
+
+				submitCartAjax(form, 'vf_cart_clear_ajax')
+					.then(function (payload) {
+						if (!payload || !payload.success || !payload.data) {
+							throw new Error('Cart clear failed');
+						}
+
+						updateCartTotals(page, payload.data);
+						renderEmptyCart(page);
+					})
+					.catch(function () {
+						form.submit();
+					})
+					.finally(function () {
+						setFormUpdating(form, false);
 					});
 			});
 		});
@@ -239,6 +352,7 @@
 		});
 
 		initCartQuantityUpdates();
+		initCartRemoveActions();
 	});
 }());
 
