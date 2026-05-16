@@ -14,7 +14,27 @@ Trong Cloudflare, domain `vinfasttpc.io.vn` can o trang thai da active va proxy 
 
 Vao `SSL/TLS > Overview` va de che do `Flexible` neu Laragon dang chay HTTP local. Sau do vao `SSL/TLS > Edge Certificates` va dam bao `Universal SSL` dang bat.
 
-## 2. Tao tunnel
+## Cach tu dong bang cloudflared login
+
+Neu dang dang nhap Cloudflare tren trinh duyet, chay file:
+
+```text
+D:\laragon\www\Vinfast\setup-cloudflare-tunnel.bat
+```
+
+File nay se:
+
+- mo trinh duyet de xac thuc Cloudflare neu may chua co `cert.pem`
+- tao tunnel `vinfast-local`
+- tao DNS route cho `vinfasttpc.io.vn` va `www.vinfasttpc.io.vn`
+- tao config local trong `%USERPROFILE%\.cloudflared\vinfast-local.yml`
+- chay tunnel toi Laragon `http://localhost:80`
+
+Giu cua so tunnel dang mo de website public hoat dong.
+
+## Cach thu cong bang Zero Trust token
+
+### 1. Tao tunnel
 
 Vao Cloudflare Zero Trust:
 
@@ -30,19 +50,19 @@ vinfast-local
 
 Chon connector Windows va copy token sau phan `--token`.
 
-## 3. Gan public hostname
+### 2. Gan public hostname
 
 Trong public hostname cua tunnel, dat:
 
 ```text
 Hostname: vinfasttpc.io.vn
-Path: /vinfast/*
+Path: bo trong
 Service: http://localhost:80
 ```
 
-Neu domain `vinfasttpc.io.vn` chi dung rieng cho website nay, co the bo trong `Path`; khi do moi duong dan tren domain se duoc dua ve Laragon.
+De trong `Path` de toan bo domain di ve Laragon. Website van nam o duong dan `/vinfast/`.
 
-## 4. Luu token local
+### 3. Luu token local
 
 Tao file nay trong project:
 
@@ -52,7 +72,7 @@ D:\laragon\www\Vinfast\cloudflare-tunnel-token.txt
 
 Dan duy nhat token Cloudflare vao file do. File token nay da duoc dua vao `.gitignore`, khong day len Git.
 
-## 5. Chay tunnel
+### 4. Chay tunnel
 
 Mo file:
 
