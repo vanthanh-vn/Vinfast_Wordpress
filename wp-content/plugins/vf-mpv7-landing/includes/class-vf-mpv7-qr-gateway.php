@@ -16,9 +16,9 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 
 		$this->title        = $this->get_option( 'title', 'Chuyển khoản QR' );
 		$this->description  = $this->get_option( 'description', 'Quét mã QR và chuyển khoản đúng số tiền, đúng nội dung đơn hàng.' );
-		$this->bank_id      = '970422';
-		$this->account_no   = '3129072005';
-		$this->account_name = 'NGUYEN VAN THANH';
+		$this->bank_id      = $this->get_option( 'bank_id', '970422' );
+		$this->account_no   = $this->get_option( 'account_no', '3129072005' );
+		$this->account_name = $this->get_option( 'account_name', 'NGUYEN VAN THANH' );
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
@@ -27,7 +27,7 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 	public function init_form_fields() {
 		$this->form_fields = array(
 			'enabled'      => array(
-				'title'   => 'Bat/tat',
+				'title'   => 'Bật/tắt',
 				'type'    => 'checkbox',
 				'label'   => 'Kích hoạt thanh toán QR',
 				'default' => 'yes',
@@ -65,12 +65,40 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 		return plugins_url( 'assets/images/payment-qr.jpg', dirname( __DIR__ ) . '/vf-mpv7-landing.php' );
 	}
 
+	private function render_qr_details( $order = null ) {
+		$qr_url  = $this->get_static_qr_url();
+		$total   = '';
+		$content = 'VINFAST';
+
+		if ( $order instanceof WC_Order ) {
+			$total   = $order->get_formatted_order_total();
+			$content = 'VF' . $order->get_order_number();
+		} elseif ( function_exists( 'WC' ) && WC()->cart ) {
+			$total = WC()->cart->get_total();
+		}
+
+		echo '<div class="vf-qr-box">';
+		echo '<img src="' . esc_url( $qr_url ) . '" alt="QR thanh toán MB Bank" loading="lazy">';
+		echo '<div class="vf-qr-detail-list">';
+		echo '<p><strong>Ngân hàng:</strong> MB Bank - Ngân hàng Quân Đội</p>';
+		echo '<p><strong>Số tài khoản:</strong> ' . esc_html( $this->account_no ) . '</p>';
+		echo '<p><strong>Chủ tài khoản:</strong> ' . esc_html( $this->account_name ) . '</p>';
+		if ( $total ) {
+			echo '<p><strong>Số tiền:</strong> ' . wp_kses_post( $total ) . '</p>';
+		}
+		echo '<p><strong>Nội dung:</strong> ' . esc_html( $content ) . '</p>';
+		echo '</div>';
+		echo '</div>';
+	}
+
 	public function payment_fields() {
 		echo '<div class="vf-qr-checkout">';
 		if ( $this->description ) {
 			echo '<p>' . wp_kses_post( wpautop( $this->description ) ) . '</p>';
 		}
-		echo '<p class="vf-qr-checkout-note">Mã QR chuyển khoản sẽ hiện sau khi bạn bấm nút đặt hàng/thanh toán.</p>';
+		echo '<h3 class="vf-qr-checkout-title">Thông tin chuyển khoản</h3>';
+		$this->render_qr_details();
+		echo '<p class="vf-qr-checkout-note">Sau khi bấm đặt hàng, hệ thống sẽ tạo mã đơn. Nếu đã chuyển khoản, vui lòng ghi đúng nội dung đơn hàng để shop đối soát nhanh.</p>';
 		echo '</div>';
 	}
 
@@ -97,21 +125,9 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 			return;
 		}
 
-		$content  = 'VF' . $order->get_order_number();
-		$qr_url   = $this->get_static_qr_url();
-
 		echo '<section class="vf-qr-payment">';
 		echo '<h2>Quét QR để thanh toán</h2>';
-		echo '<div class="vf-qr-box">';
-		echo '<img src="' . esc_url( $qr_url ) . '" alt="QR thanh toán MB Bank" loading="lazy">';
-		echo '<div>';
-		echo '<p><strong>Ngân hàng:</strong> MB Bank - Ngân hàng Quân Đội</p>';
-		echo '<p><strong>Số tài khoản:</strong> ' . esc_html( $this->account_no ) . '</p>';
-		echo '<p><strong>Chủ tài khoản:</strong> ' . esc_html( $this->account_name ) . '</p>';
-		echo '<p><strong>Số tiền:</strong> ' . wp_kses_post( $order->get_formatted_order_total() ) . '</p>';
-		echo '<p><strong>Nội dung:</strong> ' . esc_html( $content ) . '</p>';
-		echo '</div>';
-		echo '</div>';
+		$this->render_qr_details( $order );
 		echo '</section>';
 	}
 }

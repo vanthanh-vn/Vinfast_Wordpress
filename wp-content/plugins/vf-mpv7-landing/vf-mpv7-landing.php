@@ -2,7 +2,7 @@
 /**
  * Plugin Name: VF MPV 7 Landing for Elementor
  * Description: Landing page and reservation flow for a VinFast-style VF MPV 7 page. Use shortcode [vinfast_mpv7_landing] inside Elementor.
- * Version: 1.0.23
+ * Version: 1.0.24
  * Author: Local Developer
  * Text Domain: vf-mpv7-landing
  */
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class VF_MPV7_Landing {
-	const VERSION = '1.0.23';
+	const VERSION = '1.0.24';
 	const CPT     = 'vf_reservation';
 
 	public function __construct() {
@@ -1137,6 +1137,22 @@ final class VF_MPV7_Landing {
 	public function exclude_products_from_coming_soon( $is_excluded ) {
 		if ( function_exists( 'is_product' ) && is_product() ) {
 			return true;
+		}
+
+		if (
+			( function_exists( 'is_shop' ) && is_shop() )
+			|| ( function_exists( 'is_cart' ) && is_cart() )
+			|| ( function_exists( 'is_checkout' ) && is_checkout() )
+			|| ( function_exists( 'is_account_page' ) && is_account_page() )
+		) {
+			return true;
+		}
+
+		$current_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		foreach ( array( '/cua-hang', '/gio-hang', '/thanh-toan', '/tai-khoan', '/san-pham' ) as $public_path ) {
+			if ( false !== strpos( $current_uri, $public_path ) ) {
+				return true;
+			}
 		}
 
 		return $is_excluded;
