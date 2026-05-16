@@ -1801,6 +1801,14 @@ body textarea,
 	font-size: 14px;
 }
 
+.vf-cart-modern .vf-cart-qty.is-updating {
+	opacity: 0.65;
+}
+
+.vf-cart-modern .vf-cart-qty button:disabled {
+	cursor: wait;
+}
+
 .vf-cart-modern .vf-cart-subtotal {
 	display: grid;
 	grid-template-columns: 1fr 32px;

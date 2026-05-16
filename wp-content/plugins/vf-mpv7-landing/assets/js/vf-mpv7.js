@@ -56,6 +56,104 @@
 		}
 	}
 
+	function updateCartCountText(page, count) {
+		var countText = page.querySelector('[data-vf-cart-count-text]');
+		if (countText) {
+			countText.textContent = 'Bạn có ' + count + ' sản phẩm trong giỏ hàng';
+		}
+
+		document.querySelectorAll('.cart-icon strong, .cart-icon .cart-icon-count').forEach(function (node) {
+			node.textContent = String(count);
+		});
+	}
+
+	function setHtml(selector, html, root) {
+		var node = (root || document).querySelector(selector);
+		if (node) {
+			node.innerHTML = html;
+		}
+	}
+
+	function initCartQuantityUpdates() {
+		if (typeof window.vfMpv7Cart === 'undefined' || !window.vfMpv7Cart.ajaxUrl) {
+			return;
+		}
+
+		document.querySelectorAll('[data-vf-cart-qty-form]').forEach(function (form) {
+			form.addEventListener('submit', function (event) {
+				event.preventDefault();
+
+				var submitter = event.submitter || document.activeElement;
+				var quantity = submitter && submitter.name === 'quantity' ? submitter.value : '';
+				var item = form.closest('[data-vf-cart-item]');
+				var page = form.closest('.vf-cart-modern');
+
+				if (!quantity || !item || !page) {
+					form.submit();
+					return;
+				}
+
+				var formData = new FormData(form);
+				formData.set('action', 'vf_cart_update_ajax');
+				formData.set('quantity', quantity);
+
+				form.classList.add('is-updating');
+				form.querySelectorAll('button').forEach(function (button) {
+					button.disabled = true;
+				});
+
+				fetch(window.vfMpv7Cart.ajaxUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					body: formData
+				})
+					.then(function (response) {
+						return response.json();
+					})
+					.then(function (payload) {
+						if (!payload || !payload.success || !payload.data) {
+							throw new Error('Cart update failed');
+						}
+
+						var data = payload.data;
+						var input = form.querySelector('[data-vf-cart-qty-input]');
+						var buttons = form.querySelectorAll('button[name="quantity"]');
+
+						if (input) {
+							input.value = data.quantity;
+						}
+						if (buttons[0]) {
+							buttons[0].value = data.minusQty;
+							buttons[0].dataset.vfCartQuantity = data.minusQty;
+						}
+						if (buttons[1]) {
+							buttons[1].value = data.plusQty;
+							buttons[1].dataset.vfCartQuantity = data.plusQty;
+						}
+
+						setHtml('[data-vf-cart-item-subtotal]', data.itemSubtotal, item);
+						setHtml('[data-vf-cart-subtotal]', data.cartSubtotal, page);
+						setHtml('[data-vf-cart-discount]', data.discount, page);
+						setHtml('[data-vf-cart-total]', data.total, page);
+						updateCartCountText(page, data.cartCount);
+
+						if (window.jQuery && document.body) {
+							window.jQuery(document.body).trigger('wc_fragment_refresh');
+						}
+					})
+					.catch(function () {
+						form.submit();
+					})
+					.finally(function () {
+						form.classList.remove('is-updating');
+						form.querySelectorAll('button').forEach(function (button) {
+							button.disabled = false;
+						});
+					});
+			});
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('.vf-page').forEach(function (page) {
 			page.querySelectorAll('.vf-swatch').forEach(function (swatch) {
@@ -139,6 +237,8 @@
 				});
 			});
 		});
+
+		initCartQuantityUpdates();
 	});
 }());
 

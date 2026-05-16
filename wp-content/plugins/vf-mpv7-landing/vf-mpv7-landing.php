@@ -2,7 +2,7 @@
 /**
  * Plugin Name: VF MPV 7 Landing for Elementor
  * Description: Landing page and reservation flow for a VinFast-style VF MPV 7 page. Use shortcode [vinfast_mpv7_landing] inside Elementor.
- * Version: 1.0.24
+ * Version: 1.0.25
  * Author: Local Developer
  * Text Domain: vf-mpv7-landing
  */
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class VF_MPV7_Landing {
-	const VERSION = '1.0.24';
+	const VERSION = '1.0.25';
 	const CPT     = 'vf_reservation';
 
 	public function __construct() {
@@ -28,6 +28,8 @@ final class VF_MPV7_Landing {
 		add_action( 'admin_post_nopriv_vf_mpv7_reserve', array( $this, 'handle_reservation' ) );
 		add_action( 'admin_post_vf_cart_update', array( $this, 'handle_cart_update' ) );
 		add_action( 'admin_post_nopriv_vf_cart_update', array( $this, 'handle_cart_update' ) );
+		add_action( 'wp_ajax_vf_cart_update_ajax', array( $this, 'handle_cart_update_ajax' ) );
+		add_action( 'wp_ajax_nopriv_vf_cart_update_ajax', array( $this, 'handle_cart_update_ajax' ) );
 		add_action( 'admin_post_vf_cart_remove', array( $this, 'handle_cart_remove' ) );
 		add_action( 'admin_post_nopriv_vf_cart_remove', array( $this, 'handle_cart_remove' ) );
 		add_action( 'admin_post_vf_cart_clear', array( $this, 'handle_cart_clear' ) );
@@ -567,7 +569,7 @@ final class VF_MPV7_Landing {
 		<div class="vf-page vf-cart-page vf-cart-pro vf-cart-modern">
 			<header class="vf-cart-titlebar">
 				<h1>Giỏ Hàng Của Bạn</h1>
-				<p>Bạn có <?php echo esc_html( $cart_count ); ?> sản phẩm trong giỏ hàng</p>
+				<p data-vf-cart-count-text>Bạn có <?php echo esc_html( $cart_count ); ?> sản phẩm trong giỏ hàng</p>
 			</header>
 
 			<a class="vf-cart-continue" href="<?php echo esc_url( $shop_url ); ?>">← Tiếp tục mua sắm</a>
@@ -598,7 +600,7 @@ final class VF_MPV7_Landing {
 							$image_url = isset( $product_images[ $sku ] ) ? $product_images[ $sku ] : '';
 							$quantity  = isset( $item['quantity'] ) ? (int) $item['quantity'] : 1;
 							?>
-							<article class="vf-cart-item">
+							<article class="vf-cart-item" data-vf-cart-item="<?php echo esc_attr( $cart_item_key ); ?>">
 								<div class="vf-cart-image">
 									<?php if ( $image_url ) : ?>
 										<img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $product->get_name() ); ?>">
@@ -613,16 +615,16 @@ final class VF_MPV7_Landing {
 								<div class="vf-cart-price">
 									<?php echo wp_kses_post( wc_price( (float) $product->get_price() ) ); ?>
 								</div>
-								<form class="vf-cart-qty" method="post" action="<?php echo $admin_post_url; ?>">
+								<form class="vf-cart-qty" method="post" action="<?php echo $admin_post_url; ?>" data-vf-cart-qty-form>
 									<input type="hidden" name="action" value="vf_cart_update">
 									<input type="hidden" name="cart_item_key" value="<?php echo esc_attr( $cart_item_key ); ?>">
 									<?php wp_nonce_field( 'vf_cart_update', 'vf_cart_nonce' ); ?>
-									<button type="submit" name="quantity" value="<?php echo esc_attr( max( 1, $quantity - 1 ) ); ?>" aria-label="Giảm số lượng">−</button>
-									<input type="number" min="1" max="9" value="<?php echo esc_attr( $quantity ); ?>" readonly aria-label="Số lượng">
-									<button type="submit" name="quantity" value="<?php echo esc_attr( min( 9, $quantity + 1 ) ); ?>" aria-label="Tăng số lượng">+</button>
+									<button type="submit" name="quantity" value="<?php echo esc_attr( max( 1, $quantity - 1 ) ); ?>" data-vf-cart-quantity="<?php echo esc_attr( max( 1, $quantity - 1 ) ); ?>" aria-label="Giảm số lượng">−</button>
+									<input type="number" min="1" max="9" value="<?php echo esc_attr( $quantity ); ?>" readonly data-vf-cart-qty-input aria-label="Số lượng">
+									<button type="submit" name="quantity" value="<?php echo esc_attr( min( 9, $quantity + 1 ) ); ?>" data-vf-cart-quantity="<?php echo esc_attr( min( 9, $quantity + 1 ) ); ?>" aria-label="Tăng số lượng">+</button>
 								</form>
 								<div class="vf-cart-subtotal">
-									<strong><?php echo wp_kses_post( WC()->cart->get_product_subtotal( $product, $quantity ) ); ?></strong>
+									<strong data-vf-cart-item-subtotal><?php echo wp_kses_post( WC()->cart->get_product_subtotal( $product, $quantity ) ); ?></strong>
 									<form method="post" action="<?php echo $admin_post_url; ?>">
 										<input type="hidden" name="action" value="vf_cart_remove">
 										<input type="hidden" name="cart_item_key" value="<?php echo esc_attr( $cart_item_key ); ?>">
@@ -643,10 +645,10 @@ final class VF_MPV7_Landing {
 							<button type="submit" name="apply_coupon" value="Áp dụng">Áp dụng</button>
 						</form>
 						<dl>
-							<div><dt>Tạm tính</dt><dd><?php echo wp_kses_post( WC()->cart->get_cart_subtotal() ); ?></dd></div>
+							<div><dt>Tạm tính</dt><dd data-vf-cart-subtotal><?php echo wp_kses_post( WC()->cart->get_cart_subtotal() ); ?></dd></div>
 							<div><dt>Phí vận chuyển</dt><dd class="is-free">Miễn phí</dd></div>
-							<div><dt>Giảm giá</dt><dd>− <?php echo wp_kses_post( wc_price( $discount_total ) ); ?></dd></div>
-							<div class="vf-cart-total"><dt>Tổng cộng</dt><dd><?php echo wp_kses_post( WC()->cart->get_total() ); ?></dd></div>
+							<div><dt>Giảm giá</dt><dd data-vf-cart-discount>− <?php echo wp_kses_post( wc_price( $discount_total ) ); ?></dd></div>
+							<div class="vf-cart-total"><dt>Tổng cộng</dt><dd data-vf-cart-total><?php echo wp_kses_post( WC()->cart->get_total() ); ?></dd></div>
 						</dl>
 						<a class="vf-cta" href="<?php echo esc_url( $checkout_url ); ?>">Thanh Toán Ngay →</a>
 						<form class="vf-cart-clear-form" method="post" action="<?php echo $admin_post_url; ?>">
@@ -686,6 +688,47 @@ final class VF_MPV7_Landing {
 
 		wp_safe_redirect( home_url( '/gio-hang/' ) );
 		exit;
+	}
+
+	public function handle_cart_update_ajax() {
+		if (
+			empty( $_POST['vf_cart_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['vf_cart_nonce'] ) ), 'vf_cart_update' )
+			|| ! function_exists( 'WC' )
+			|| ! WC()->cart
+		) {
+			wp_send_json_error( array( 'message' => 'Không thể cập nhật giỏ hàng.' ), 403 );
+		}
+
+		$key = isset( $_POST['cart_item_key'] ) ? sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) ) : '';
+		$qty = isset( $_POST['quantity'] ) ? min( 9, max( 1, (int) $_POST['quantity'] ) ) : 1;
+
+		if ( ! $key || empty( WC()->cart->cart_contents[ $key ] ) ) {
+			wp_send_json_error( array( 'message' => 'Sản phẩm không còn trong giỏ hàng.' ), 404 );
+		}
+
+		WC()->cart->set_quantity( $key, $qty, true );
+		WC()->cart->calculate_totals();
+
+		$item    = WC()->cart->cart_contents[ $key ];
+		$product = isset( $item['data'] ) ? $item['data'] : null;
+
+		if ( ! $product || ! $product->exists() ) {
+			wp_send_json_error( array( 'message' => 'Sản phẩm không hợp lệ.' ), 404 );
+		}
+
+		wp_send_json_success(
+			array(
+				'quantity'     => $qty,
+				'minusQty'     => max( 1, $qty - 1 ),
+				'plusQty'      => min( 9, $qty + 1 ),
+				'cartCount'    => WC()->cart->get_cart_contents_count(),
+				'itemSubtotal' => WC()->cart->get_product_subtotal( $product, $qty ),
+				'cartSubtotal' => WC()->cart->get_cart_subtotal(),
+				'discount'     => '− ' . wc_price( (float) WC()->cart->get_discount_total() ),
+				'total'        => WC()->cart->get_total(),
+			)
+		);
 	}
 
 	public function handle_cart_remove() {
@@ -1132,6 +1175,13 @@ final class VF_MPV7_Landing {
 		$base_url = plugin_dir_url( __FILE__ );
 		wp_enqueue_style( 'vf-mpv7-landing', $base_url . 'assets/css/vf-mpv7.css', array( 'flatsome-main', 'flatsome-shop', 'flatsome-style' ), self::VERSION );
 		wp_enqueue_script( 'vf-mpv7-landing', $base_url . 'assets/js/vf-mpv7.js', array(), self::VERSION, true );
+		wp_localize_script(
+			'vf-mpv7-landing',
+			'vfMpv7Cart',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			)
+		);
 	}
 
 	public function exclude_products_from_coming_soon( $is_excluded ) {
