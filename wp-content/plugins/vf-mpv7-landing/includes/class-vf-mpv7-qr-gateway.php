@@ -62,7 +62,14 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 	}
 
 	private function get_static_qr_url() {
-		return plugins_url( 'assets/images/payment-qr.jpg', dirname( __DIR__ ) . '/vf-mpv7-landing.php' );
+		$qr_file = dirname( __DIR__ ) . '/assets/images/payment-qr.jpg';
+		$version = file_exists( $qr_file ) ? (string) filemtime( $qr_file ) : '1';
+
+		return add_query_arg(
+			'v',
+			$version,
+			plugins_url( 'assets/images/payment-qr.jpg', dirname( __DIR__ ) . '/vf-mpv7-landing.php' )
+		);
 	}
 
 	private function render_qr_details( $order = null ) {
