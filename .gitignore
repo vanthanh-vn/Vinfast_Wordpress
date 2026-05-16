@@ -1,3 +1,9 @@
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Cloudflare Tunnel local secrets
+cloudflare-tunnel-token.txt
+.cloudflared/
+cert.pem
+*.cfargotunnel.com.json

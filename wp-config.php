@@ -89,6 +89,26 @@ define( 'WP_DEBUG', false );
 
 /* Add any custom values between this line and the "stop editing" line. */
 
+/**
+ * Cloudflare Tunnel support for the public VinFast domain.
+ *
+ * Local access stays unchanged at http://localhost/vinfast/.
+ * Public access should use https://vinfasttpc.io.vn/vinfast/.
+ */
+if (
+	( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === strtolower( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) )
+	|| ( isset( $_SERVER['HTTP_CF_VISITOR'] ) && false !== strpos( $_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"' ) )
+) {
+	$_SERVER['HTTPS'] = 'on';
+}
+
+if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+	$vf_public_host = strtolower( $_SERVER['HTTP_HOST'] );
+	if ( in_array( $vf_public_host, array( 'vinfasttpc.io.vn', 'www.vinfasttpc.io.vn' ), true ) ) {
+		define( 'WP_HOME', 'https://' . $vf_public_host . '/vinfast' );
+		define( 'WP_SITEURL', 'https://' . $vf_public_host . '/vinfast' );
+	}
+}
 
 
 /* That's all, stop editing! Happy publishing. */
