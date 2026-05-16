@@ -96,9 +96,7 @@ class VF_MPV7_QR_Gateway extends WC_Payment_Gateway {
 		if ( $this->description ) {
 			echo '<p>' . wp_kses_post( wpautop( $this->description ) ) . '</p>';
 		}
-		echo '<h3 class="vf-qr-checkout-title">Thông tin chuyển khoản</h3>';
-		$this->render_qr_details();
-		echo '<p class="vf-qr-checkout-note">Sau khi bấm đặt hàng, hệ thống sẽ tạo mã đơn. Nếu đã chuyển khoản, vui lòng ghi đúng nội dung đơn hàng để shop đối soát nhanh.</p>';
+		echo '<p class="vf-qr-checkout-note">Mã QR và thông tin chuyển khoản sẽ hiện sau khi bạn bấm nút Đặt hàng.</p>';
 		echo '</div>';
 	}
 
