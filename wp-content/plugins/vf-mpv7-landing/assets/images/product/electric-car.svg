@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Electric car">
+  <defs>
+    <linearGradient id="car" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".52" stop-color="#e8eef5"/>
+      <stop offset="1" stop-color="#c7d4e2"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12213a"/>
+      <stop offset="1" stop-color="#56799d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="28" stdDeviation="20" flood-color="#102646" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <rect width="900" height="520" rx="34" fill="#eef4fa"/>
+  <ellipse cx="462" cy="388" rx="346" ry="42" fill="#b7c7d8" opacity=".45"/>
+  <g filter="url(#shadow)">
+    <path d="M172 305c16-82 77-135 169-149h205c96 0 160 53 195 148l18 49H146z" fill="url(#car)"/>
+    <path d="M348 190h182c53 0 93 31 122 88H266c22-52 50-80 82-88z" fill="url(#glass)"/>
+    <path d="M300 280c73 20 145 30 217 30 72 0 138-9 199-28" fill="none" stroke="#d71920" stroke-width="12" stroke-linecap="round"/>
+    <path d="M196 306h72" stroke="#d71920" stroke-width="13" stroke-linecap="round"/>
+    <path d="M668 305h82" stroke="#d71920" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="292" cy="350" r="74" fill="#172233"/>
+    <circle cx="292" cy="350" r="42" fill="#e8f0f8"/>
+    <circle cx="632" cy="350" r="74" fill="#172233"/>
+    <circle cx="632" cy="350" r="42" fill="#e8f0f8"/>
+    <path d="M393 190l-45 88M520 190l45 88" stroke="#eef4fa" stroke-width="10" stroke-linecap="round"/>
+    <path d="M412 246h72" stroke="#172233" stroke-width="9" stroke-linecap="round" opacity=".36"/>
+  </g>
+</svg>
