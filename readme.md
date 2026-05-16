@@ -65,3 +65,6 @@
 
 - Username: thanhnguyenvan762@gmail.com
 - Password: 1Phancuagiadinh@
+
+# link deploy
+https://vinfasttpc.io.vn/vinfast/
